@@ -1,0 +1,22 @@
+.DS_Store
+
+# Secrets — never commit
+esp8266/include/secrets.h
+esp8266/NasWake/secrets.h
+worker/.dev.vars
+
+# PlatformIO / IDE
+esp8266/.pio
+esp8266/.vscode/.browse.c_cpp.db*
+esp8266/.vscode/c_cpp_properties.json
+esp8266/.vscode/launch.json
+esp8266/.vscode/ipch
+
+# Local USB driver downloads (install from vendor if needed)
+esp8266/drivers/
+
+# Packet-capture scratch files
+esp8266/wol-capture*
+esp8266/wol-usb-power*
+esp8266/wol-filters.txt
+esp8266/CAPTURE_*.txt

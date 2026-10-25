@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nas-wake",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-23",
+  "routes": [
+    {
+      "pattern": "wake.example.com",
+      "custom_domain": true
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "WAKE",
+        "class_name": "WakeState"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["WakeState"]
+    }
+  ]
+}

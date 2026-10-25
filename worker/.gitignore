@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+.dev.vars
+
+# Local deploy config (may contain your domain)
+wrangler.jsonc
+
