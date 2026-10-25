@@ -80,6 +80,10 @@ cp esp8266/NasWake/secrets.h.example esp8266/NasWake/secrets.h
 - 仓库示例里只有占位符。公开自己的 fork 前，确认没有个人域名、MAC、内网地址和真实口令。
 - 这只能证明「魔术包已发出」，不能证明系统已进桌面。
 
+## 给 AI Agent
+
+编码助手请先读 [`AGENTS.md`](AGENTS.md)（硬约束、API 契约、双端固件同步、禁止提交项）。Cursor 规则见 `.cursor/rules/agent-guide.mdc`。
+
 ## License
 
 未单独声明许可证时，请按你自己的仓库设置选用；贡献或二次分发前请自行确认。

@@ -1,0 +1,13 @@
+---
+description: Follow AGENTS.md for secrets, dual firmware sync, and API contracts
+alwaysApply: true
+---
+
+# Agent guide
+
+Before changing this repo, read and obey root `AGENTS.md`.
+
+- Never commit `secrets.h`, `wrangler.jsonc`, or `.dev.vars`; never put real domain/MAC/LAN/passwords in tracked files or the wake page.
+- Keep `esp8266/NasWake/NasWake.ino` and `esp8266/src/main.cpp` (and both `certs.h` / `secrets.h.example`) in sync.
+- Do not remove or rewrite Durable Object migration tag `v1`.
+- Poll does not consume; only ack moves pending → consumed. WoL goes to subnet broadcast UDP/9.
