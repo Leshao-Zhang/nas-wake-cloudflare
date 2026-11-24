@@ -5,10 +5,10 @@
 ## 怎么工作
 
 ```
-手机浏览器 ──HTTPS──► Cloudflare Worker（密码保护 / 状态机）
+手机浏览器 ──HTTPS /wake──► Cloudflare Worker（密码保护 / 状态机）
                               ▲
-                              │ 每约 8 秒轮询 + 设备令牌
-                         ESP8266
+                              │ NAS 未开机时才轮询，带设备令牌
+                         ESP8266 ──先连 NAS:443──► 已开机则本轮结束
                               │ 待开机时
                               ▼
                     局域网广播 UDP/9 魔术包 ──► NAS 网卡
@@ -38,7 +38,7 @@
 ```bash
 cd worker
 cp wrangler.jsonc.example wrangler.jsonc
-# 编辑 wrangler.jsonc：把 routes 里的域名改成你的自定义域名
+# 编辑 wrangler.jsonc：路由改成 你的域名/wake*，zone_name 填所在 Zone
 npm install
 npx wrangler login
 openssl rand -base64 24          # 生成设备令牌
@@ -47,7 +47,7 @@ npx wrangler secret put DEVICE_TOKEN
 npx wrangler deploy
 ```
 
-建议用自定义域名作为网页和 ESP 的入口；部分网络会污染 `workers.dev` 的 DNS。
+网页和 ESP 使用 `https://你的域名/wake`。NAS 用另一个主机名。部分网络会污染 `workers.dev` 的 DNS。
 
 更细的步骤、接口约定见 [`worker/部署.md`](worker/部署.md)。
 
@@ -59,7 +59,7 @@ npx wrangler deploy
 cp esp8266/NasWake/secrets.h.example esp8266/NasWake/secrets.h
 ```
 
-填写 Wi-Fi、`DEVICE_TOKEN`（与 Worker 相同）、`WAKE_HOST`、NAS 的 MAC，以及同子网广播地址。
+填写 Wi-Fi、`DEVICE_TOKEN`（与 Worker 相同）、`WAKE_HOST`、`NAS_HOST`、NAS 的 MAC，以及同子网广播地址。
 
 2. 用 Arduino IDE 打开 `esp8266/NasWake/NasWake.ino` 烧录；或在 `esp8266/` 下用 PlatformIO：`pio run -t upload`。
 
@@ -69,7 +69,7 @@ cp esp8266/NasWake/secrets.h.example esp8266/NasWake/secrets.h
 
 ### 3. 验证
 
-1. 手机流量打开你的域名，输入密码开机，页面应变为「待开机」。
+1. 手机流量打开 `https://你的域名/wake`，输入密码开机，页面应变为「待开机」。
 2. 串口（115200）应出现 `要开机` → `魔术包已发出` → `已回报消费`。
 3. 页面变为「指令已消费」；NAS 需已开启网络唤醒，关机/睡眠后网口待机灯仍亮。
 

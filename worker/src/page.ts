@@ -98,7 +98,7 @@ export const PAGE = `<!DOCTYPE html>
     }
 
     async function refresh() {
-      const response = await post("/api/status");
+      const response = await post("/wake/api/status");
       if (response.status === 401) {
         show("密码错误");
         stopPolling();
@@ -122,7 +122,7 @@ export const PAGE = `<!DOCTYPE html>
     wakeEl.addEventListener("click", async () => {
       wakeEl.disabled = true;
       try {
-        const response = await post("/api/wake");
+        const response = await post("/wake/api/wake");
         if (response.status === 401) {
           show("密码错误");
           return;

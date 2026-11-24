@@ -5,8 +5,8 @@
   "compatibility_date": "2026-10-23",
   "routes": [
     {
-      "pattern": "wake.example.com",
-      "custom_domain": true
+      "pattern": "wake.example.com/wake*",
+      "zone_name": "example.com"
     }
   ],
   "durable_objects": {

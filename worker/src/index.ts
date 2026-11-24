@@ -8,6 +8,13 @@ export interface Env {
 }
 
 const PENDING_MS = 120_000;
+const PUBLIC_PREFIX = "/wake";
+
+function publicPath(pathname: string): string | null {
+  if (pathname === PUBLIC_PREFIX || pathname === `${PUBLIC_PREFIX}/`) return "/";
+  if (pathname.startsWith(`${PUBLIC_PREFIX}/`)) return pathname.slice(PUBLIC_PREFIX.length);
+  return null;
+}
 
 type WakeStatus = "idle" | "pending" | "consumed" | "expired";
 
@@ -65,7 +72,9 @@ async function callState(env: Env, path: string): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (request.method === "GET" && url.pathname === "/") {
+    const pathname = publicPath(url.pathname);
+    if (pathname == null) return json({ error: "没有这个地址" }, 404);
+    if (request.method === "GET" && pathname === "/") {
       return new Response(PAGE, {
         headers: {
           "content-type": "text/html; charset=utf-8",
@@ -75,32 +84,32 @@ export default {
         },
       });
     }
-    if (request.method === "GET" && url.pathname === "/favicon.ico") {
+    if (request.method === "GET" && pathname === "/favicon.ico") {
       return new Response(null, { status: 204 });
     }
 
-    if (url.pathname === "/api/wake" || url.pathname === "/api/status") {
+    if (pathname === "/api/wake" || pathname === "/api/status") {
       if (request.method !== "POST") return json({ error: "方法不对" }, 405);
       if (!configured(env.WAKE_PASSWORD)) return json({ error: "服务未配置" }, 503);
       const password = await readPassword(request);
       if (!password || !safeEqual(password, env.WAKE_PASSWORD)) {
         return json({ error: "密码错误" }, 401);
       }
-      const path = url.pathname === "/api/wake" ? "/wake" : "/status";
+      const path = pathname === "/api/wake" ? "/wake" : "/status";
       return callState(env, path);
     }
 
-    if (url.pathname === "/api/poll" || url.pathname === "/api/ack") {
+    if (pathname === "/api/poll" || pathname === "/api/ack") {
       const methodOk =
-        (url.pathname === "/api/poll" && request.method === "GET") ||
-        (url.pathname === "/api/ack" && request.method === "POST");
+        (pathname === "/api/poll" && request.method === "GET") ||
+        (pathname === "/api/ack" && request.method === "POST");
       if (!methodOk) return json({ error: "方法不对" }, 405);
       if (!configured(env.DEVICE_TOKEN)) return json({ error: "服务未配置" }, 503);
       const token = readDeviceToken(request);
       if (!token || !safeEqual(token, env.DEVICE_TOKEN)) {
-        return json(url.pathname === "/api/poll" ? { wake: false } : { ok: false }, 401);
+        return json(pathname === "/api/poll" ? { wake: false } : { ok: false }, 401);
       }
-      const path = url.pathname === "/api/poll" ? "/poll" : "/ack";
+      const path = pathname === "/api/poll" ? "/poll" : "/ack";
       return callState(env, path);
     }
 

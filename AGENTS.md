@@ -17,7 +17,7 @@ Cloudflare Worker 只存「要不要开机」；家里 ESP8266 轮询后发 WoL 
    以及两侧的 `certs.h`、`secrets.h.example`。
 5. **Durable Object migration `tag: v1` 不可删改**（`wrangler.jsonc.example`）。可追加新 migration，不要改已有 tag。
 6. **不要把 `workers.dev` 当作唯一推荐入口**；文档与固件默认走自定义域名（`WAKE_HOST`）。
-7. **轮询不消费**：`/api/poll` 只读；只有成功发包后的 `/api/ack` 才把 `pending` → `consumed`。
+7. **轮询不消费**：`/wake/api/poll` 只读；只有成功发包后的 `/wake/api/ack` 才把 `pending` → `consumed`。ESP 先连 `NAS_HOST:443`，连上则本轮不问 Worker。
 8. **魔术包发广播地址 UDP/9**，不要改成发往 NAS 主机单播 IP（关机无 ARP）。
 
 ## 仓库地图
@@ -41,10 +41,10 @@ Cloudflare Worker 只存「要不要开机」；家里 ESP8266 轮询后发 WoL 
 
 | 调用方 | 方法 | 路径 | 鉴权 | 成功体要点 |
 |--------|------|------|------|------------|
-| 网页 | `POST` | `/api/wake` | JSON `{ "password" }` | `{ "status": "pending" }` |
-| 网页 | `POST` | `/api/status` | 同上 | `{ "status": "idle\|pending\|consumed\|expired" }` |
-| ESP | `GET` | `/api/poll` | `Authorization: Bearer <DEVICE_TOKEN>` | `{ "wake": true\|false }` |
-| ESP | `POST` | `/api/ack` | 同上 | `{ "ok": true\|false }` |
+| 网页 | `POST` | `/wake/api/wake` | JSON `{ "password" }` | `{ "status": "pending" }` |
+| 网页 | `POST` | `/wake/api/status` | 同上 | `{ "status": "idle\|pending\|consumed\|expired" }` |
+| ESP | `GET` | `/wake/api/poll` | `Authorization: Bearer <DEVICE_TOKEN>` | `{ "wake": true\|false }` |
+| ESP | `POST` | `/wake/api/ack` | 同上 | `{ "ok": true\|false }` |
 
 - 密码错：`401` + `{ "error": "密码错误" }`（状态不变）。
 - 设备令牌错：`401`；poll 仍返回 `{ "wake": false }`，ack 返回 `{ "ok": false }`。
@@ -54,7 +54,7 @@ Cloudflare Worker 只存「要不要开机」；家里 ESP8266 轮询后发 WoL 
 
 ## 固件约定
 
-- 主机 / MAC / 广播**只**来自 `secrets.h` 宏：`WAKE_HOST`、`NAS_MAC_0..5`、`WOL_BCAST_0..3`。
+- 主机 / MAC / 广播**只**来自 `secrets.h` 宏：`WAKE_HOST`、`NAS_HOST`、`NAS_MAC_0..5`、`WOL_BCAST_0..3`。
 - 轮询间隔约 `8000` ms；先 NTP 再 HTTPS；校验 `certs.h` 信任锚。
 - 串口 115200；业务日志关键字：`WiFi 已连接`、`poll 空闲`、`要开机`、`魔术包已发出`、`已回报消费`。
 - 烧录接线坑见 `esp8266/用Arduino烧录.md` 与 `.cursor/skills/arduino-uno-nodemcu-flash/SKILL.md`（Uno 转接时 **TX-TX / RX-RX**，RESET 接地）。
@@ -78,7 +78,7 @@ Cloudflare Worker 只存「要不要开机」；家里 ESP8266 轮询后发 WoL 
 
 1. 只指导复制 example → 本地文件，**让用户自己填密**；Agent 不要生成或索要真实密码并写进仓库。
 2. 域名：改本地 `wrangler.jsonc` 的 `routes[0].pattern`，以及 `secrets.h` 的 `WAKE_HOST`。
-3. 验证用 curl 时 `BASE=https://wake.example.com` 占位，或用户提供的域名（会话内使用，不写入 git）。
+3. 验证用 curl 时 `BASE=https://wake.example.com/wake` 占位，或用户提供的域名（会话内使用，不写入 git）。
 
 ### 公开前自检
 

@@ -10,8 +10,10 @@
 namespace {
 
 constexpr char kHost[] = WAKE_HOST;
-constexpr char kPollPath[] = "/api/poll";
-constexpr char kAckPath[] = "/api/ack";
+constexpr char kPollPath[] = "/wake/api/poll";
+constexpr char kAckPath[] = "/wake/api/ack";
+constexpr char kNasHost[] = NAS_HOST;
+constexpr uint16_t kNasPort = 443;
 
 // 目标 MAC / 广播地址来自本地 secrets.h，不进仓库
 constexpr uint8_t kNasMac[6] = {
@@ -22,6 +24,7 @@ constexpr uint16_t kWolPort = 9;
 constexpr uint32_t kPollMs = 8000;
 constexpr uint32_t kWifiRetryMs = 3000;
 constexpr uint32_t kNtpWaitMs = 20000;
+constexpr uint32_t kNasProbeMs = 2000;
 
 BearSSL::X509List gTrustAnchors(CLOUDFLARE_TRUST_ANCHORS);
 WiFiUDP gUdp;
@@ -69,15 +72,18 @@ void configureTls(BearSSL::WiFiClientSecure& client) {
 }
 
 void tuneTlsBuffers() {
-  BearSSL::WiFiClientSecure probe;
-  // Cloudflare 支持较小 TLS 分片时更省 RAM，减少偶发 HTTP -1
-  if (probe.probeMaxFragmentLength(kHost, 443, 1024)) {
-    gTlsRxBuf = 1024;
-    Serial.println(F("TLS MFLN 1024"));
-  } else {
-    gTlsRxBuf = 2048;
-    Serial.println(F("TLS 缓冲 2048"));
-  }
+  // 实际握手不会协商分片长度。证书链大约 1.6KB，1024 的接收缓冲装不下。
+  gTlsRxBuf = 2048;
+  Serial.println(F("TLS 缓冲 2048"));
+}
+
+bool nasIsOn() {
+  WiFiClient client;
+  client.setTimeout(kNasProbeMs);
+  const bool up = client.connect(kNasHost, kNasPort) == 1;
+  client.stop();
+  Serial.println(up ? F("NAS 已开机") : F("NAS 未开机"));
+  return up;
 }
 
 void logHttpFail(const char* tag, HTTPClient& http, BearSSL::WiFiClientSecure& client, int code) {
@@ -215,6 +221,11 @@ void setup() {
 void loop() {
   if (!wifiReady()) {
     delay(kWifiRetryMs);
+    return;
+  }
+  // 443 能连上说明 NAS 已在服务。确认未开机后才去问 Worker。
+  if (nasIsOn()) {
+    delay(kPollMs);
     return;
   }
   if (!timeReady()) {
